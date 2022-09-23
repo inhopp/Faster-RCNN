@@ -9,10 +9,11 @@ def parse_args():
 
     # models
     parser.add_argument("--pretrained", type=bool, default=False)
+    parser
 
     # dataset
     parser.add_argument("--data_dir", type=str, default="./datasets/")
-    parser.add_argument("--data_name", type=str, default='rsp_data')
+    parser.add_argument("--data_name", type=str, default='fruits')
 
     # training setting
     parser.add_argument("--lr", type=float, default=0.0005)

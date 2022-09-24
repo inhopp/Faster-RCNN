@@ -9,7 +9,7 @@ def parse_args():
 
     # models
     parser.add_argument("--pretrained", type=bool, default=False)
-    parser
+    parser.add_argument("--input_size", type=int, default=600)
 
     # dataset
     parser.add_argument("--data_dir", type=str, default="./datasets/")
@@ -31,7 +31,7 @@ def parse_args():
 
 
 def make_template(opt):
-    
+
     # device
     opt.device_ids = [int(item) for item in opt.device.split(',')]
     if len(opt.device_ids) == 1:

@@ -8,7 +8,7 @@ class Dataset(data.Dataset):
     def __init__(self, opt, phase, transform=None):
         self.data_dir = opt.data_dir
         self.data_name = opt.data_name
-        self.phase = phase
+        self.img_size = opt.input_size
         self.transform = transform
 
         self.img_names = list()
@@ -50,11 +50,24 @@ def __getitem__(self, index):
             labels.append(3)
 
         # bound boxes
-        bbx = [obj_xmin, obj_ymin, obj_xmax, obj_ymax]
-        boxes.append(bbx)
+        bbox = [obj_xmin, obj_ymin, obj_xmax, obj_ymax]
+        boxes.append(bbox)
 
 
-    return img, labels, boxes
+    # resize bbox
+    W = int(anno_root.find("size").find("width").text)
+    H = int(anno_root.find("size").find("heigth").text)
+
+    W_ratio = self.img_size/W
+    H_ratio = self.img_size/H
+    ratio_list = [W_ratio, H_ratio, W_ratio, H_ratio]
+    resized_boxes = []
+
+    for box in boxes:
+        bbox = [int(a*b) for a, b in zip(box, ratio_list)]
+        resized_boxes.append(bbox)
+
+    return img, labels, resized_boxes
 
 
 def __len__(self):

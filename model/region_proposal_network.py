@@ -2,30 +2,8 @@ import numpy as np
 import torch.nn as nn
 from torch.nn import functional as F
 from utils import weight_initialize
+from .utils.bbox_tool import generate_anchor
 from .utils.create_tool import Proposal_Creator
-
-def generate_anchor():
-    base_size = 16
-    ratio = [0.5, 1, 2]
-    scale = [8, 16, 32]
-
-    anchor_boxes = np.zeros((len(ratio) * len(scale), 4), dtype=np.float32)
-
-    x_center = base_size/2
-    y_center = base_size/2
-
-    for i in len(ratio):
-        for j in len(scale):
-            h = base_size * scale[j] * np.sqrt(ratio[i])
-            w = base_size * scale[j] * np.sqrt(1./ratio[i])
-
-            index = i * len(ratio) + j
-            anchor_boxes[index, 0] = y_center - h / 2. # ymin
-            anchor_boxes[index, 1] = x_center - w / 2. # xmin
-            anchor_boxes[index, 2] = y_center + h / 2. # ymax
-            anchor_boxes[index, 3] = x_center + w / 2. # xmax
-
-    return anchor_boxes
 
 
 class Region_Proposal_Network(nn.Module):

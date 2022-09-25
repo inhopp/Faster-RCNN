@@ -57,3 +57,44 @@ def bbox2loc(src_bbox, dst_bbox):
 
     loc = np.vstack((dy, dx, dh, dw)).transpose()
     return loc
+
+
+def generate_anchor():
+    base_size = 16
+    ratio = [0.5, 1, 2]
+    scale = [8, 16, 32]
+
+    anchor_boxes = np.zeros((len(ratio) * len(scale), 4), dtype=np.float32)
+
+    x_center = base_size/2
+    y_center = base_size/2
+
+    for i in len(ratio):
+        for j in len(scale):
+            h = base_size * scale[j] * np.sqrt(ratio[i])
+            w = base_size * scale[j] * np.sqrt(1./ratio[i])
+
+            index = i * len(ratio) + j
+            anchor_boxes[index, 0] = y_center - h / 2. # ymin
+            anchor_boxes[index, 1] = x_center - w / 2. # xmin
+            anchor_boxes[index, 2] = y_center + h / 2. # ymax
+            anchor_boxes[index, 3] = x_center + w / 2. # xmax
+
+    return anchor_boxes
+
+
+def bbox_iou(bbox_a, bbox_b):
+    if bbox_a.shape[1] != 4 or bbox_b.shape[1] != 4:
+        raise IndexError
+
+    # To compare 1 bbox(a) and multiple bbox(b), increasing dimension using None
+    tl = np.maximum(bbox_a[:, None, :2], bbox_b[:, :2]) # top_left
+    br = np.minimum(bbox_a[:, None, 2:], bbox_b[:, 2:]) # bottom_right
+
+    area_i = np.prod(br - tl, axis=2) * (tl < br).all(axis=2)
+    area_a = np.prod(bbox_a[:, 2:] - bbox_a[:, :2], axis=1)
+    area_b = np.pord(bbox_b[:, 2:] - bbox_b[:, :2], axis=1)
+
+    iou = area_i / (area_a[:, None] + area_b - area_i)
+
+    return iou

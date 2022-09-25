@@ -31,6 +31,10 @@ def parse_args():
 
 
 def make_template(opt):
+    # dataset
+    with open(os.path.join(opt.data_dir, opt.data_name, 'label.txt'), 'r') as f:
+        lines = f.readlines()
+    opt.num_classes = len(lines)
 
     # device
     opt.device_ids = [int(item) for item in opt.device.split(',')]

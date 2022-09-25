@@ -10,8 +10,8 @@ def get_inside_index(anchor, h, w):
     index_inside = np.where(
         (anchor[:, 0] >= 0) &
         (anchor[:, 1] >= 0) &
-        (anchor[:, 2] <= H) &
-        (anchor[:, 3] <= W)
+        (anchor[:, 2] <= h) &
+        (anchor[:, 3] <= w)
     )[0]
     return index_inside
 
@@ -118,7 +118,7 @@ class Anchor_Target_Creator(object):
 
         return loc, label
 
-        
+
     def _create_label(self, inside_index, anchor, bbox):
         # label: 1 is positive, 0 is negative, -1 is ignore
         label = np.empty((len(inside_index), ), dtype=np.int32)
@@ -159,3 +159,56 @@ class Anchor_Target_Creator(object):
         gt_argmax_ious = np.where(ious == gt_max_ious)[0]
 
         return argmax_ious, max_ious, gt_argmax_ious
+
+
+
+class Proposal_Target_Creator:
+    '''positive/negative sampling after nms and return ground_truth loc'''
+
+    def __init__(self, n_sample=128, pos_ratio=0.25, pos_iou_thresh=0.5, neg_iou_thresh_max=0.5, neg_iou_thresh_min=0.0):
+        self.n_sample = n_sample
+        self.pos_ratio = pos_ratio
+        self.pos_iou_thresh = pos_iou_thresh
+        self.neg_iou_thresh_max = neg_iou_thresh_max
+        self.neg_iou_thresh_min = neg_iou_thresh_min
+
+    def __call__(self, roi, bbox, label):
+        loc_normalize_mean = (0., 0., 0., 0.)
+        loc_normalize_std = (0.1, 0.1, 0.2, 0.2)
+
+        roi = np.concatenate((roi, bbox), axis=0)
+
+        pos_roi_per_image = np.round(self.n_sample * self.pos_ratio)
+        iou = bbox_iou(roi, bbox)
+        gt_assignment = iou.argmax(axis=1)
+        max_iou = iou.max(axis=1)
+
+        # offset range of classes from [0, n_fg_class - 1] to [1, n_fg_class]  (except background)
+        gt_roi_label = label[gt_assignment] + 1
+
+        # select positive sample
+        pos_index = np.where(max_iou >= self.pos_iou_thresh)[0]
+        pos_roi_per_this_image = int(min(pos_roi_per_image, pos_index.size))
+
+        if pos_index.size > 0:
+            pos_index = np.random.choice(pos_index, size=pos_roi_per_this_image, replace=False)
+
+        # select negative sample
+        neg_index = np.where((max_iou < self.neg_iou_thresh_max) & (max_iou >= self.neg_iou_thresh_min))[0]
+        neg_roi_per_this_image = self.n_sample - pos_roi_per_this_image
+        neg_roi_per_this_image = int(min(neg_roi_per_this_image, neg_index.size))
+
+        if neg_index.size > 0:
+            neg_index = np.random.choice(neg_index, size=neg_roi_per_this_image, replace=False)
+
+        # selecting indices
+        keep_index = np.append(pos_index, neg_index)
+        gt_roi_label = gt_roi_label[keep_index]
+        gt_roi_label[pos_roi_per_this_image:] = 0 # negative label -> 0
+        sample_roi = roi[keep_index]
+
+        # compute loc (offsets and scales to match sampled rois to the ground_truth)
+        gt_roi_loc = bbox2loc(sample_roi, bbox[gt_assignment[keep_index]])
+        gt_roi_loc = ((gt_roi_loc - np.array(loc_normalize_mean, np.float32)) / np.array(loc_normalize_std, np.float32))
+
+        return sample_roi, gt_roi_loc, gt_roi_label

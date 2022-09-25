@@ -7,9 +7,9 @@ from torchvision.ops import nms
 from torchvision.ops import RoIPool
 
 from .utils.bbox_tool import loc2bbox
-from utils import tonumpy, weight_initialize
-from utils import totensor
-from utils import nograd
+from utils import tonumpy, weight_initialize, totensor, nograd
+
+from region_proposal_network import Region_Proposal_Network
 
 def decom_vgg16():
     '''load vgg16 & select required layers'''
@@ -167,3 +167,17 @@ class Faster_RCNN(nn.Module):
         return bboxes, labels, scores
 
 
+class Faster_RCNN_VGG16(Faster_RCNN):
+    # downsample 16x for output of conv5 in vgg16
+    feat_stride = 16
+
+    def __init__(self, opt):
+        self.dev = torch.device("cuda: {}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
+        self.n_fg_class = opt.num_classes # except background
+
+        extractor, classifier = decom_vgg16()
+
+        rpn = Region_Proposal_Network(self.dev, 512, 512, feat_stride=self.feat_stride)
+        head = VGG16RoIHead(self.dev, n_class=self.n_fg_class+1, roi_size=7, spatial_scale=(1./self.feat_stride), classifier=classifier)
+        
+        super(Faster_RCNN, self).__init__(extractor, rpn, head)

@@ -75,9 +75,12 @@ class VGG16RoIHead(nn.Module):
 
 
 class Faster_RCNN(nn.Module):
-    def __init__(self, dev, extractor, rpn, head):
+    def __init__(self, opt, extractor, rpn, head):
         super(Faster_RCNN, self).__init__()
-        self.dev = dev
+        self.dev = torch.device("cuda: {}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
+        self.lr = opt.lr
+        self.weight_decay = opt.weight_decay
+
         self.extractor = extractor
         self.rpn = rpn
         self.head = head
@@ -167,6 +170,25 @@ class Faster_RCNN(nn.Module):
         return bboxes, labels, scores
 
 
+    def get_optimizer(self):
+        lr = self.lr
+        params = []
+        for key, value in dict(self.named_parameters()).items():
+            if value.requires_grad:
+                if 'bias' in key:
+                    params += [{'params': [value], 'lr': lr * 2, 'weight_decay': 0}]
+                else:
+                    params += [{'params': [value], 'lr': lr, 'weight_decay': self.weight_decay}]
+        self.optimizer = torch.optim.SGD(params, momentum=0.9)
+        return self.optimizer
+
+
+    def scale_lr(self, decay=0.1):
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] *= decay
+        return self.optimizer        
+
+
 class Faster_RCNN_VGG16(Faster_RCNN):
     # downsample 16x for output of conv5 in vgg16
     feat_stride = 16
@@ -177,7 +199,7 @@ class Faster_RCNN_VGG16(Faster_RCNN):
 
         extractor, classifier = decom_vgg16()
 
-        rpn = Region_Proposal_Network(self.dev, 512, 512, feat_stride=self.feat_stride)
+        rpn = Region_Proposal_Network(opt, 512, 512, feat_stride=self.feat_stride)
         head = VGG16RoIHead(self.dev, n_class=self.n_fg_class+1, roi_size=7, spatial_scale=(1./self.feat_stride), classifier=classifier)
         
         super(Faster_RCNN, self).__init__(extractor, rpn, head)

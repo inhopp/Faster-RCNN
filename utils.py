@@ -27,3 +27,8 @@ def scalar(data):
     if isinstance(data, torch.Tensor):
         return data.item()
 
+def nograd(f):
+    def new_f(*args, **kargs):
+        with torch.no_grad():
+            return f(*args, **kargs)
+    return new_f

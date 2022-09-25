@@ -6,7 +6,7 @@ from torchvision.models import vgg16
 from torchvision.ops import nms
 from torchvision.ops import RoIPool
 
-from model.rpn import loc2bbox
+from .utils.bbox_tool import loc2bbox
 from utils import tonumpy, weight_initialize
 from utils import totensor
 from utils import nograd
@@ -165,3 +165,5 @@ class Faster_RCNN(nn.Module):
 
         self.train()
         return bboxes, labels, scores
+
+

@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from torchvision.ops import nms
+from utils import weight_initialize
 
 def generate_anchor():
     base_size = 16
@@ -203,14 +204,6 @@ class Region_Proposal_Network(nn.Module):
 
         return rpn_locs, rpn_scores, rois, roi_indices, anchor
 
-
-def weight_initialize(m, mean, stddev, truncated=False):
-    if truncated:
-        m.weight.data.normal_().fmod_(2).mul_(stddev).add_(mean)
-    else:
-        m.weight.data.normal_(mean, stddev)
-        m.bias.data.zero_()
-        
 
 def _enumerate_shifted_anchor(anchor_base, feat_stride, height, width):
     '''

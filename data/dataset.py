@@ -17,6 +17,8 @@ class Dataset(data.Dataset):
             for line in reader:
                 self.img_names.append(line)
 
+        ### label2num ###
+
 
 def __getitem__(self, index):
     # read image

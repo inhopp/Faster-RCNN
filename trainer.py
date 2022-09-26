@@ -1,10 +1,12 @@
 import os
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
 from collections import namedtuple
 from torchnet.meter import ConfusionMeter, AverageValueMeter
 
-from utils import tonumpy, totensor
+from utils import tonumpy, totensor, scalar
 from .model.utils.create_tool import Anchor_Target_Creator, Proposal_Target_Creator
 
 
@@ -63,12 +65,77 @@ class Faster_RCNN_Trainer(nn.Module):
 
         # RPN loss
         gt_rpn_loc, gt_rpn_label = self.anchor_target_creator(tonumpy(bbox), anchor, img_size)
-        gt_rpn_label = totensor(gt_rpn_label).long()
-        gt_rpn_loc = totensor(gt_rpn_loc)
+        gt_rpn_label = totensor(gt_rpn_label, self.dev).long()
+        gt_rpn_loc = totensor(gt_rpn_loc, self.dev)
 
-        rpn_loc_loss = 0
-        
+        rpn_loc_loss = self._fast_rcnn_loc_loss(rpn_loc, gt_rpn_loc, gt_rpn_label.data, self.rpn_sigma)
+        rpn_cls_loss = F.cross_entropy(rpn_score, gt_rpn_label.to(self.dev), ignore_index=-1)
 
+        _gt_rpn_label = gt_rpn_label[gt_rpn_label > -1]
+        _rpn_score = tonumpy(rpn_score)[tonumpy(gt_rpn_label) > -1]
+        self.rpn_cm.add(totensor(_rpn_score, torch.device("cpu")), _gt_rpn_label.data.long())
+
+        # Fast RCNN loss
+        n_sample = roi_cls_loc.shape[0]
+        roi_cls_loc = roi_cls_loc.view(n_sample, -1, 4)
+        roi_loc = roi_cls_loc[torch.arange(0, n_sample).long.to(self.dev), totensor(gt_roi_label).long()]
+        gt_roi_label = totensor(gt_roi_label).long()
+        gt_roi_loc = totensor(gt_roi_loc)
+
+        roi_loc_loss = self._fast_rcnn_loc_loss(roi_loc.contiguous(), gt_roi_loc, gt_roi_label.data, self.roi_sigma)
+        roi_cls_loss = nn.CrossEntropyLoss()(roi_score, gt_roi_label.to(self.dev))
+        self.roi_cm.add(totensor(roi_score, torch.device("cpu")), gt_roi_label.data.long())
+
+        losses = [rpn_loc_loss, rpn_cls_loss, roi_loc_loss, roi_cls_loss]
+        losses = losses + [sum(losses)]
+
+        return LossTuple(*losses)
+
+    
+    def train_step(self, imgs, bboxes, labels, scale):
+        self.optimizer.zero_grad()
+        losses = self.forward(imgs, bboxes, labels, scale)
+        losses.total_loss.backward()
+        self.optimizer.step()
+        self.update_meters(losses)
+
+        return losses
+
+
+    def save(self, save_optimizer=False, save_path=None):
+        save_dict = dict()
+
+        save_dict['model'] = self.faster_rcnn.state_dict()
+
+        if save_optimizer:
+            save_dict['optimizer'] = self.optimizer.state_dict()
+
+        if save_path is None:
+            save_path = './checkpoints/faster_rcnn_scratch_checkpoints.pth'
+
+        save_dir = os.path.dirname(save_path)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        torch.save(save_dict, save_path)
+
+        return save_path
+
+
+    def load(self, path, load_optimizer=True, parse_opt=False, ):
+        state_dict = torch.load(path)
+
+        if 'model' in state_dict:
+            self.faster_rcnn.load_state_dict(state_dict['model'])
+
+        else:  # legacy way, for backward compatibility
+            self.faster_rcnn.load_state_dict(state_dict)
+            return self
+
+        if 'optimizer' in state_dict and load_optimizer:
+            self.optimizer.load_state_dict(state_dict['optimizer'])
+            
+        return self
 
 
 
@@ -90,3 +157,18 @@ class Faster_RCNN_Trainer(nn.Module):
         loc_loss = self._smooth_l1_loss(pred_loc, gt_loc, in_weight.detach(), sigma)
         loc_loss /= ((gt_label >= 0).sum().float())
         return loc_loss
+
+
+    def update_meters(self, losses):
+        loss_d = {k: scalar(v) for k, v in losses._asdict().tems()}
+        for key, meter in self.meters.items():
+            meter.add(loss_d[key])
+
+    def reset_meters(self):
+        for key, meter in self.meters.items():
+            meter.reset()
+        self.roi_cm.reset()
+        self.rpn_cm.reset()
+
+    def get_meter_data(self):
+        return {k: v.value()[0] for k, v in self.meters.items()}

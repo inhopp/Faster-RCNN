@@ -49,7 +49,7 @@ class Faster_RCNN_Trainer(nn.Module):
         features = self.faster_rcnn.extractor(imgs)
 
         # region proposal network
-        rpn_locs, rpn_scores, rois, roi_indices, anchor = self.faster_rcnn.rpn(features, img_size, scale)
+        rpn_locs, rpn_scores, rois, roi_indices, anchor = self.faster_rcnn.rpn(features, img_size)
 
         # Since batch size is one, convert variables to singular form
         bbox = bboxes[0]

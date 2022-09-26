@@ -17,60 +17,59 @@ class Dataset(data.Dataset):
             for line in reader:
                 self.img_names.append(line)
 
-        ### label2num ###
+        self.label2num = {}
+        with open(os.path.join(self.data_dir, self.data_name, 'label.txt'), 'r') as f:
+            lines = f.readlines()
+            for i, line in enumerate(lines):
+                self.label2num[line.strip()] = i
 
 
-def __getitem__(self, index):
-    # read image
-    img = Image.open(os.path.join(self.data_dir, self.data_name, self.img_names[index]))
-    img = img.convert('RGB')
+    def __getitem__(self, index):
+        # read image
+        img = Image.open(os.path.join(self.data_dir, self.data_name, self.img_names[index]))
+        img = img.convert('RGB')
 
-    if self.transform is not None:
-        img = self.transform(img)
+        if self.transform is not None:
+            img = self.transform(img)
 
-    # read annotation (xml file)
-    anno_path = self.img_names[index].replace('jpg', 'xml')
-    anno_tree = et.parse(anno_path)
-    anno_root = anno_tree.getroot()
+        # read annotation (xml file)
+        anno_path = self.img_names[index].replace('jpg', 'xml')
+        anno_tree = et.parse(anno_path)
+        anno_root = anno_tree.getroot()
 
-    labels = []
-    boxes = []
+        labels = []
+        boxes = []
 
-    for node in anno_root.findall("object"):
-        obj_name = node.find("name").text
-        obj_xmin = node.find("bndbox").find("xmin").text
-        obj_ymin = node.find("bndbox").find("ymin").text
-        obj_xmax = node.find("bndbox").find("xmax").text
-        obj_ymax = node.find("bndbox").find("ymax").text   
+        for node in anno_root.findall("object"):
+            obj_name = node.find("name").text
+            obj_xmin = node.find("bndbox").find("xmin").text
+            obj_ymin = node.find("bndbox").find("ymin").text
+            obj_xmax = node.find("bndbox").find("xmax").text
+            obj_ymax = node.find("bndbox").find("ymax").text   
 
-        # labels
-        if obj_name == 'apple':
-            labels.append(1)
-        elif obj_name == 'banana':
-            labels.append(2)
-        else:
-            labels.append(3)
+            # labels
+            labels.append(self.label2num[obj_name])
 
-        # bound boxes
-        bbox = [obj_xmin, obj_ymin, obj_xmax, obj_ymax]
-        boxes.append(bbox)
+            # bound boxes
+            bbox = [obj_xmin, obj_ymin, obj_xmax, obj_ymax]
+            boxes.append(bbox)
 
 
-    # resize bbox
-    W = int(anno_root.find("size").find("width").text)
-    H = int(anno_root.find("size").find("heigth").text)
+        # resize bbox
+        W = int(anno_root.find("size").find("width").text)
+        H = int(anno_root.find("size").find("heigth").text)
 
-    W_ratio = self.img_size/W
-    H_ratio = self.img_size/H
-    ratio_list = [W_ratio, H_ratio, W_ratio, H_ratio]
-    resized_boxes = []
+        W_ratio = self.img_size/W
+        H_ratio = self.img_size/H
+        ratio_list = [W_ratio, H_ratio, W_ratio, H_ratio]
+        resized_boxes = []
 
-    for box in boxes:
-        bbox = [int(a*b) for a, b in zip(box, ratio_list)]
-        resized_boxes.append(bbox)
+        for box in boxes:
+            bbox = [int(a*b) for a, b in zip(box, ratio_list)]
+            resized_boxes.append(bbox)
 
-    return img, resized_boxes, labels
+        return img, resized_boxes, labels
 
 
-def __len__(self):
-    return len(self.data)
+    def __len__(self):
+        return len(self.data)

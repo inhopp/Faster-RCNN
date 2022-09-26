@@ -37,7 +37,7 @@ class Faster_RCNN_Trainer(nn.Module):
         self.meters = {k: AverageValueMeter() for k in LossTuple._fields}
 
 
-    def forward(self, imgs, bboxes, labels, scale):
+    def forward(self, imgs, bboxes, labels):
         n = bboxes.shape[0]
         if n != 1:
             raise ValueError('Currently only batch size 1 is supported.')
@@ -92,9 +92,9 @@ class Faster_RCNN_Trainer(nn.Module):
         return LossTuple(*losses)
 
     
-    def train_step(self, imgs, bboxes, labels, scale):
+    def train_step(self, imgs, bboxes, labels):
         self.optimizer.zero_grad()
-        losses = self.forward(imgs, bboxes, labels, scale)
+        losses = self.forward(imgs, bboxes, labels)
         losses.total_loss.backward()
         self.optimizer.step()
         self.update_meters(losses)
@@ -113,10 +113,9 @@ class Faster_RCNN_Trainer(nn.Module):
         if save_path is None:
             save_path = './checkpoints/faster_rcnn_scratch_checkpoints.pth'
 
-        save_dir = os.path.dirname(save_path)
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-
+        os.makedirs(os.path.join(self.opt.ckpt_root, self.opt.data_name), exist_ok=True)
+        save_path = os.path.join(self.opt.ckpt_root, self.opt.data_name, "best_epoch.pt")
+       
         torch.save(save_dict, save_path)
 
         return save_path

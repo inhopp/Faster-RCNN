@@ -183,7 +183,7 @@ class Faster_RCNN(nn.Module):
         return self.optimizer
 
 
-    def scale_lr(self, decay=0.1):
+    def scale_lr(self, decay=0.9):
         for param_group in self.optimizer.param_groups:
             param_group['lr'] *= decay
         return self.optimizer        

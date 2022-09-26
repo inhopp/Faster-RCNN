@@ -9,7 +9,7 @@ def parse_args():
 
     # models
     parser.add_argument("--pretrained", type=bool, default=False)
-    parser.add_argument("--input_size", type=int, default=600)
+    parser.add_argument("--input_size", type=int, default=800)
 
     # dataset
     parser.add_argument("--data_dir", type=str, default="./datasets/")
@@ -17,12 +17,12 @@ def parse_args():
 
     # training setting
     parser.add_argument("--lr", type=float, default=0.0005)
-    parser.add_argument("--weight_decay", type=float, default=1.0e-05)
+    parser.add_argument("--lr_decay", type=float, default=0.9)
     parser.add_argument("--n_epoch", type=int, default=10)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--eval_epoch", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--eval_batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--eval_batch_size", type=int, default=1)
 
     # misc
     parser.add_argument("--ckpt_root", type=str, default="./FT_model")

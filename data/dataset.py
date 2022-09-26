@@ -69,7 +69,7 @@ def __getitem__(self, index):
         bbox = [int(a*b) for a, b in zip(box, ratio_list)]
         resized_boxes.append(bbox)
 
-    return img, labels, resized_boxes
+    return img, resized_boxes, labels
 
 
 def __len__(self):

@@ -51,18 +51,17 @@ def train(opt):
 
 def eval(data_loader, faster_rcnn):
     pred_bboxes, pred_labels, pred_scores = list(), list(), list()
-    gt_bboxes, gt_labels, gt_difficults = list(), list(), list()
-    for ii, (imgs, sizes, gt_bboxes_, gt_labels_, gt_difficults_) in tqdm(enumerate(data_loader)):
-        sizes = [sizes[0][0].item(), sizes[1][0].item()]
+    gt_bboxes, gt_labels = list(), list()
+    for ii, (imgs, gt_bboxes_, gt_labels_) in tqdm(enumerate(data_loader)):
+        sizes = [imgs.shape[1:][0][0].item(), imgs.shape[1:][1][0].item()]
         pred_bboxes_, pred_labels_, pred_scores_ = faster_rcnn.predict(imgs, [sizes])
         gt_bboxes += list(gt_bboxes_.numpy())
         gt_labels += list(gt_labels_.numpy())
-        gt_difficults += list(gt_difficults_.numpy())
         pred_bboxes += pred_bboxes_
         pred_labels += pred_labels_
         pred_scores += pred_scores_
 
-    result = eval_detection(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, gt_difficults, use_07_metric=True)
+    result = eval_detection(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, use_07_metric=True)
     
     return result
 

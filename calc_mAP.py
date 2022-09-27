@@ -1,30 +1,25 @@
 from collections import defaultdict
-import itertools
 import numpy as np
 
 from model.utils.bbox_tool import bbox_iou
 
 
-def eval_detection(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, gt_difficults=None, iou_thresh=0.5, use_07_metric=False):
+def eval_detection(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, iou_thresh=0.5, use_07_metric=False):
 
-    prec, rec = calc_prec_rec(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, gt_difficults, iou_thresh=iou_thresh)
+    prec, rec = calc_prec_rec(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, iou_thresh=iou_thresh)
 
     ap = calc_ap(prec, rec, use_07_metric=use_07_metric)
 
     return {'ap': ap, 'map': np.nanmean(ap)}
 
 
-def calc_prec_rec(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, gt_difficults=None, iou_thresh=0.5):
+def calc_prec_rec(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, iou_thresh=0.5):
 
     pred_bboxes = iter(pred_bboxes)
     pred_labels = iter(pred_labels)
     pred_scores = iter(pred_scores)
     gt_bboxes = iter(gt_bboxes)
     gt_labels = iter(gt_labels)
-    if gt_difficults is None:
-        gt_difficults = itertools.repeat(None)
-    else:
-        gt_difficults = iter(gt_difficults)
 
     n_pos = defaultdict(int)
     score = defaultdict(list)
@@ -83,7 +78,7 @@ def calc_prec_rec(pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, g
                 else:
                     match[l].append(0)
 
-    for iter_ in (pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels, gt_difficults):
+    for iter_ in (pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels):
         if next(iter_, None) is not None:
             raise ValueError('Length of input iterables need to be same.')
 

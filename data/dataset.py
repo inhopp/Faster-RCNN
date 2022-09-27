@@ -1,5 +1,6 @@
 import os
 import csv
+import torch
 import xml.etree.ElementTree as et
 from PIL import Image
 import torch.utils.data as data
@@ -26,14 +27,14 @@ class Dataset(data.Dataset):
 
     def __getitem__(self, index):
         # read image
-        img = Image.open(os.path.join(self.data_dir, self.data_name, self.img_names[index]))
+        img = Image.open(os.path.join(self.data_dir, self.data_name, self.img_names[index][0]))
         img = img.convert('RGB')
 
         if self.transform is not None:
             img = self.transform(img)
 
         # read annotation (xml file)
-        anno_path = self.img_names[index].replace('jpg', 'xml')
+        anno_path = os.path.join(self.data_dir, self.data_name, self.img_names[index][0].replace('jpg', 'xml'))
         anno_tree = et.parse(anno_path)
         anno_root = anno_tree.getroot()
 
@@ -57,7 +58,7 @@ class Dataset(data.Dataset):
 
         # resize bbox
         W = int(anno_root.find("size").find("width").text)
-        H = int(anno_root.find("size").find("heigth").text)
+        H = int(anno_root.find("size").find("height").text)
 
         W_ratio = self.img_size/W
         H_ratio = self.img_size/H
@@ -65,11 +66,15 @@ class Dataset(data.Dataset):
         resized_boxes = []
 
         for box in boxes:
+            box = list(map(float, box))
             bbox = [int(a*b) for a, b in zip(box, ratio_list)]
             resized_boxes.append(bbox)
 
+        resized_boxes = torch.tensor(resized_boxes, dtype=torch.float32)
+        labels = torch.tensor(labels, dtype=torch.int64)
+        
         return img, resized_boxes, labels
 
 
     def __len__(self):
-        return len(self.data)
+        return len(self.img_names)

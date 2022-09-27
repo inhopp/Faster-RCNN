@@ -17,7 +17,7 @@ for f_name in os.listdir('./train'):
 
 for f_name in os.listdir('./test'):
     if '.xml' in f_name:
-        anno_path = os.path.join('./train', f_name)
+        anno_path = os.path.join('./test', f_name)
         anno_tree = et.parse(anno_path)
         anno_root = anno_tree.getroot()
 

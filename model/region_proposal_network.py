@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from utils import weight_initialize
@@ -7,11 +8,11 @@ from .utils.create_tool import Proposal_Creator
 
 
 class Region_Proposal_Network(nn.Module):
-    def __init__(self, dev, in_channels=512, mid_channels=512, feat_stride=16, proposal_creator_params=dict()):
+    def __init__(self, opt, in_channels=512, mid_channels=512, feat_stride=16, proposal_creator_params=dict()):
         super(Region_Proposal_Network, self).__init__()
-        self.dev = dev
+        self.dev = torch.device("cuda: {}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
         self.feat_stride = feat_stride
-        self.proposal_layer = Proposal_Creator(self, **proposal_creator_params)
+        self.proposal_layer = Proposal_Creator(self, self.dev, **proposal_creator_params)
         self.anchor_base = generate_anchor()
         n_anchor = self.anchor_base.shape[0]
 
@@ -36,7 +37,7 @@ class Region_Proposal_Network(nn.Module):
         rpn_locs = self.loc(hidden)
         rpn_locs = rpn_locs.permute(0, 2, 3, 1).contiguous().view(n, -1, 4)
 
-        rpn_scores = self.socre(hidden)
+        rpn_scores = self.score(hidden)
         rpn_scores = rpn_scores.permute(0, 2, 3, 1).contiguous()
 
         rpn_softmax_scores = F.softmax(rpn_scores.view(n, hh, ww, n_anchor, 2), dim=4)
@@ -50,13 +51,13 @@ class Region_Proposal_Network(nn.Module):
         roi_indices = list() # index of image
 
         for i in range(n):
-            roi = self.proposal_layer(self.dev, rpn_locs[i].cpu().data.numpy(), rpn_fg_scores[i].cpu().data.numpy(), anchor, img_size, scale=scale)
+            roi = self.proposal_layer(rpn_locs[i].cpu().data.numpy(), rpn_fg_scores[i].cpu().data.numpy(), anchor, img_size, scale=scale)
             batch_index = i * np.ones((len(roi),), dtype=np.int32)
             rois.append(roi)
             roi_indices.append(batch_index)
 
-        rois = np.concatenate(rois, index=0)
-        roi_indices = np.concatenate(roi_indices, index=0)
+        rois = np.concatenate(rois, axis=0)
+        roi_indices = np.concatenate(roi_indices, axis=0)
 
         return rpn_locs, rpn_scores, rois, roi_indices, anchor
 
@@ -70,7 +71,7 @@ def _enumerate_shifted_anchor(anchor_base, feat_stride, height, width):
     shift_y = np.arange(0, height * feat_stride, feat_stride)
     shift_x = np.arange(0, width * feat_stride, feat_stride)
     shift_x, shift_y = np.meshgrid(shift_x, shift_y)
-    shift = np.stack((shift_y.ravel(), shift_x.ravel(), shift_y.ravel(), shift_x.rabel()), axis=1)
+    shift = np.stack((shift_y.ravel(), shift_x.ravel(), shift_y.ravel(), shift_x.ravel()), axis=1)
 
     A = anchor_base.shape[0]
     K = shift.shape[0]

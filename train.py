@@ -17,10 +17,10 @@ def train(opt):
     test_loader = generate_loader('test', opt)
     print("data load complete")
 
-    model = Faster_RCNN_VGG16().to(dev)
+    model = Faster_RCNN_VGG16(opt).to(dev)
     print("model construct complete")
 
-    trainer = Faster_RCNN_Trainer(model).to(dev)
+    trainer = Faster_RCNN_Trainer(opt, model).to(dev)
 
     if opt.pretrained:
         load_path = os.path.join(opt.ckpt_root, opt.data_name, "best_epoch.pt")
@@ -71,4 +71,4 @@ def eval(data_loader, faster_rcnn):
 if __name__ =='__main__':
     opt = get_option()
     torch.manual_seed(opt.seed)
-    train()
+    train(opt)

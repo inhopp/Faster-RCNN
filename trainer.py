@@ -7,7 +7,7 @@ from collections import namedtuple
 from torchnet.meter import ConfusionMeter, AverageValueMeter
 
 from utils import tonumpy, totensor, scalar
-from .model.utils.create_tool import Anchor_Target_Creator, Proposal_Target_Creator
+from model.utils.create_tool import Anchor_Target_Creator, Proposal_Target_Creator
 
 
 LossTuple = namedtuple('LossTuple', ['rpn_loc_loss', 'rpn_cls_loss', 'roi_loc_loss', 'roi_cls_loss', 'total_loss'])
@@ -26,14 +26,11 @@ class Faster_RCNN_Trainer(nn.Module):
         self.anchor_target_creator = Anchor_Target_Creator()
         self.proposal_target_creator = Proposal_Target_Creator()
 
-        self.loc_normalize_mean = faster_rcnn.loc_normalize_mean
-        self.loc_normalize_std = faster_rcnn.loc_normalize_std
-
         self.optimizer = self.faster_rcnn.get_optimizer()
 
         # indicators for training status (confusion matrix)
         self.rpn_cm = ConfusionMeter(2)
-        self.roi_cm = ConfusionMeter(11) 
+        self.roi_cm = ConfusionMeter(4)  # 4 = 3 + 1 (n_class + background)
         self.meters = {k: AverageValueMeter() for k in LossTuple._fields}
 
 
@@ -58,7 +55,7 @@ class Faster_RCNN_Trainer(nn.Module):
         rpn_loc = rpn_locs[0]
         roi = rois
 
-        sample_roi, gt_roi_loc, gt_roi_label = self.proposal_target_creator(roi, tonumpy(bbox), tonumpy(label), self.loc_normalize_mean, self.loc_normalize_std)
+        sample_roi, gt_roi_loc, gt_roi_label = self.proposal_target_creator(roi, tonumpy(bbox), tonumpy(label))
 
         sample_roi_index = torch.zeros(len(sample_roi)) # because batch_size=1
         roi_cls_loc, roi_score = self.faster_rcnn.head(features, sample_roi, sample_roi_index)
@@ -78,12 +75,13 @@ class Faster_RCNN_Trainer(nn.Module):
         # Fast RCNN loss
         n_sample = roi_cls_loc.shape[0]
         roi_cls_loc = roi_cls_loc.view(n_sample, -1, 4)
-        roi_loc = roi_cls_loc[torch.arange(0, n_sample).long.to(self.dev), totensor(gt_roi_label).long()]
-        gt_roi_label = totensor(gt_roi_label).long()
-        gt_roi_loc = totensor(gt_roi_loc)
+        roi_loc = roi_cls_loc[torch.arange(0, n_sample).long().to(self.dev), totensor(gt_roi_label, self.dev).long()]
+        gt_roi_label = totensor(gt_roi_label, self.dev).long()
+        gt_roi_loc = totensor(gt_roi_loc, self.dev)
 
         roi_loc_loss = self._fast_rcnn_loc_loss(roi_loc.contiguous(), gt_roi_loc, gt_roi_label.data, self.roi_sigma)
         roi_cls_loss = nn.CrossEntropyLoss()(roi_score, gt_roi_label.to(self.dev))
+
         self.roi_cm.add(totensor(roi_score, torch.device("cpu")), gt_roi_label.data.long())
 
         losses = [rpn_loc_loss, rpn_cls_loss, roi_loc_loss, roi_cls_loss]
@@ -159,7 +157,7 @@ class Faster_RCNN_Trainer(nn.Module):
 
 
     def update_meters(self, losses):
-        loss_d = {k: scalar(v) for k, v in losses._asdict().tems()}
+        loss_d = {k: scalar(v) for k, v in losses._asdict().items()}
         for key, meter in self.meters.items():
             meter.add(loss_d[key])
 

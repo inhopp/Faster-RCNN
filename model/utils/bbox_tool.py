@@ -69,8 +69,8 @@ def generate_anchor():
     x_center = base_size/2
     y_center = base_size/2
 
-    for i in len(ratio):
-        for j in len(scale):
+    for i in range(len(ratio)):
+        for j in range(len(scale)):
             h = base_size * scale[j] * np.sqrt(ratio[i])
             w = base_size * scale[j] * np.sqrt(1./ratio[i])
 
@@ -93,7 +93,7 @@ def bbox_iou(bbox_a, bbox_b):
 
     area_i = np.prod(br - tl, axis=2) * (tl < br).all(axis=2)
     area_a = np.prod(bbox_a[:, 2:] - bbox_a[:, :2], axis=1)
-    area_b = np.pord(bbox_b[:, 2:] - bbox_b[:, :2], axis=1)
+    area_b = np.prod(bbox_b[:, 2:] - bbox_b[:, :2], axis=1)
 
     iou = area_i / (area_a[:, None] + area_b - area_i)
 

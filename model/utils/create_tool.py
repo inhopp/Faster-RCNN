@@ -1,8 +1,7 @@
 import numpy as np
 import torch
 from torchvision.ops import nms
-from bbox_tool import loc2bbox
-from model.utils.bbox_tool import bbox2loc, bbox_iou
+from .bbox_tool import loc2bbox, bbox2loc, bbox_iou
 
 def get_inside_index(anchor, h, w):
     '''Calc indicies of anchors which are located completely inside of the image'''
@@ -33,14 +32,15 @@ def unmap(data, count, index, fill=0):
 class Proposal_Creator:
     '''generate RoI (train: 2000, test: 300)'''
 
-    def __init__(self, parent_model,
+    def __init__(self, parent_model, dev,
                  nms_thresh=0.7,
                  n_train_pre_nms=12000,
                  n_train_post_nms=2000,
                  n_test_pre_nms=6000,
                  n_test_post_nms=300,
                  min_size=16):
-        
+                 
+        self.dev = dev
         self.parent_model = parent_model
         self.nms_thresh = nms_thresh
         self.n_train_pre_nms = n_train_pre_nms      # num of roi before nms
@@ -49,7 +49,7 @@ class Proposal_Creator:
         self.n_test_post_nms = n_test_post_nms      # num of roi after nms
         self.min_size = min_size
 
-    def __call__(self, dev, loc, score, anchor, img_size, scale=1.):
+    def __call__(self, loc, score, anchor, img_size, scale=1.):
         if self.parent_model.training:
             n_pre_nms = self.n_train_pre_nms
             n_post_nms = self.n_train_post_nms
@@ -80,10 +80,7 @@ class Proposal_Creator:
         score = score[order]
 
         # apply nms
-        keep = nms(
-            torch.from_numpy(roi).to(dev),
-            torch.from_numpy(score).to(dev),
-            self.nms_thresh)
+        keep = nms(torch.from_numpy(roi).to(self.dev), torch.from_numpy(score).to(self.dev), self.nms_thresh)
 
         if n_post_nms > 0:
             keep = keep[:n_post_nms]

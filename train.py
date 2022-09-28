@@ -46,7 +46,7 @@ def train(opt):
 
         if eval_result['map'] > best_mAP:
             best_mAP = eval_result['map']
-            trainer.save()
+            trainer.save(opt)
 
 
 def eval(data_loader, faster_rcnn):

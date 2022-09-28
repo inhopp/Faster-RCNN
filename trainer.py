@@ -100,7 +100,7 @@ class Faster_RCNN_Trainer(nn.Module):
         return losses
 
 
-    def save(self, save_optimizer=False, save_path=None):
+    def save(self, opt, save_optimizer=False, save_path=None):
         save_dict = dict()
 
         save_dict['model'] = self.faster_rcnn.state_dict()
@@ -111,8 +111,8 @@ class Faster_RCNN_Trainer(nn.Module):
         if save_path is None:
             save_path = './checkpoints/faster_rcnn_scratch_checkpoints.pth'
 
-        os.makedirs(os.path.join(self.opt.ckpt_root, self.opt.data_name), exist_ok=True)
-        save_path = os.path.join(self.opt.ckpt_root, self.opt.data_name, "best_epoch.pt")
+        os.makedirs(os.path.join(opt.ckpt_root, opt.data_name), exist_ok=True)
+        save_path = os.path.join(opt.ckpt_root, opt.data_name, "best_epoch.pt")
        
         torch.save(save_dict, save_path)
 

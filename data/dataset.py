@@ -49,7 +49,7 @@ class Dataset(data.Dataset):
             obj_ymax = node.find("bndbox").find("ymax").text   
 
             # labels
-            labels.append(self.label2num[obj_name]+1)
+            labels.append(self.label2num[obj_name])
 
             # bound boxes
             bbox = [obj_xmin, obj_ymin, obj_xmax, obj_ymax]

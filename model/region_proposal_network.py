@@ -10,7 +10,7 @@ from .utils.create_tool import Proposal_Creator
 class Region_Proposal_Network(nn.Module):
     def __init__(self, opt, in_channels=512, mid_channels=512, feat_stride=16, proposal_creator_params=dict()):
         super(Region_Proposal_Network, self).__init__()
-        self.dev = torch.device("cuda: {}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
+        self.dev = torch.device("cuda:{}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
         self.feat_stride = feat_stride
         self.proposal_layer = Proposal_Creator(self, self.dev, **proposal_creator_params)
         self.anchor_base = generate_anchor()

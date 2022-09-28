@@ -10,7 +10,7 @@ from trainer import Faster_RCNN_Trainer
 from calc_mAP import eval_detection
 
 def train(opt):
-    dev = torch.device("cuda: {}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
+    dev = torch.device("cuda:{}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
     print("device: ", dev)
 
     train_loader = generate_loader('train', opt)
@@ -53,7 +53,8 @@ def eval(data_loader, faster_rcnn):
     pred_bboxes, pred_labels, pred_scores = list(), list(), list()
     gt_bboxes, gt_labels = list(), list()
     for ii, (imgs, gt_bboxes_, gt_labels_) in tqdm(enumerate(data_loader)):
-        sizes = [imgs.shape[1:][0][0].item(), imgs.shape[1:][1][0].item()]
+        sizes = imgs.shape[1:]
+        sizes = [sizes[0][0].item(), sizes[1][0].item()]
         pred_bboxes_, pred_labels_, pred_scores_ = faster_rcnn.predict(imgs, [sizes])
         gt_bboxes += list(gt_bboxes_.numpy())
         gt_labels += list(gt_labels_.numpy())

@@ -77,7 +77,7 @@ class VGG16RoIHead(nn.Module):
 class Faster_RCNN(nn.Module):
     def __init__(self, opt, extractor, rpn, head):
         super(Faster_RCNN, self).__init__()
-        self.dev = torch.device("cuda: {}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
+        self.dev = torch.device("cuda:{}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
         self.lr = opt.lr
         self.weight_decay = opt.weight_decay
 
@@ -194,7 +194,7 @@ class Faster_RCNN_VGG16(Faster_RCNN):
     feat_stride = 16
 
     def __init__(self, opt):
-        dev = torch.device("cuda: {}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
+        dev = torch.device("cuda:{}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
         n_fg_class = opt.num_classes # except background
 
         extractor, classifier = decom_vgg16()

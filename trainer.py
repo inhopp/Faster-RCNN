@@ -17,7 +17,7 @@ class Faster_RCNN_Trainer(nn.Module):
     def __init__(self, opt, faster_rcnn):
         super(Faster_RCNN_Trainer, self).__init__()
         
-        self.dev = torch.device("cuda: {}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
+        self.dev = torch.device("cuda:{}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
 
         self.faster_rcnn = faster_rcnn
         self.rpn_sigma = 3.

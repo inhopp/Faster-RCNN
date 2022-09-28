@@ -44,6 +44,8 @@ def train(opt):
         trainer.faster_rcnn.scale_lr(lr_decay)
         lr = lr * lr_decay
 
+        print("Epoch: [{}/{}] mAP: {:.3f}".format(epoch+1, opt.n_epoch, eval_result['map']))       
+
         if eval_result['map'] > best_mAP:
             best_mAP = eval_result['map']
             trainer.save(opt)

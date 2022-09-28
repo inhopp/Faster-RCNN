@@ -12,14 +12,16 @@ def generate_loader(phase, opt):
     if phase == 'train':
         transform = transforms.Compose([
             transforms.Resize(img_size),
+            transforms.CenterCrop(img_size),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(mean, std)
         ])
-
+        
     else:
         transform = transforms.Compose([
             transforms.Resize(img_size),
+            transforms.CenterCrop(img_size),
             transforms.ToTensor(),
             transforms.Normalize(mean, std)
         ])

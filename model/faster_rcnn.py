@@ -119,6 +119,8 @@ class Faster_RCNN(nn.Module):
             prob_l = prob_l[mask]
             keep = nms(cls_bbox_l, prob_l, self.nms_thresh)
             bbox.append(cls_bbox_l[keep].cpu().numpy())
+            label.append((l-1) * np.ones((len(keep),)))
+            score.append((prob_l[keep].cpu().numpy()))
 
         bbox = np.concatenate(bbox, axis=0).astype(np.float32)
         label = np.concatenate(label, axis=0).astype(np.int32)

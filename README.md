@@ -80,3 +80,8 @@ python3 inference.py
     --num_workers {}(default: 4) \
     --eval_batch_size {}(default: 1) \ # support only batch_size=1
 ```
+
+<br>
+
+#### Main Reference
+https://github.com/shkim5616/faster-rcnn-for-studying

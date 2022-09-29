@@ -1,6 +1,5 @@
 import os
 import torch
-import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
@@ -8,7 +7,6 @@ from data import generate_loader
 from option import get_option
 from model.faster_rcnn import Faster_RCNN_VGG16
 from trainer import Faster_RCNN_Trainer
-from calc_mAP import eval_detection
 
 def inference(opt):
     dev = torch.device("cuda:{}".format(opt.gpu) if torch.cuda.is_available() else "cpu")
@@ -20,10 +18,8 @@ def inference(opt):
     print("model construct complete")
 
     trainer = Faster_RCNN_Trainer(opt, model).to(dev)
-
-    if opt.pretrained:
-        load_path = os.path.join(opt.ckpt_root, opt.data_name, "best_epoch.pt")
-        trainer.load(load_path)
+    load_path = os.path.join(opt.ckpt_root, opt.data_name, "best_epoch.pt")
+    trainer.load(load_path)
  
     bboxes = []
     labels = []

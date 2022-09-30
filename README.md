@@ -53,7 +53,7 @@
 
 ``` python
 # Clone this repo and install dependency
-https://github.com/inhopp/Faster_RCNN_pytorch.git
+git clone https://github.com/inhopp/Faster_RCNN_pytorch.git
 pip3 install requirements.txt
 ```
 

@@ -2,12 +2,6 @@
 
 > [Paper_Review](https://inhopp.github.io/paper/Paper10/)
 
-| original_image | Detection |
-|:-:|:-:|
-| ![orange_91](https://user-images.githubusercontent.com/96368476/192968601-6dae1a8b-e8d6-4df0-a815-9a48d488885e.jpg) | ![detection](https://user-images.githubusercontent.com/96368476/192968604-d6a4fdb6-44a8-4de0-a515-424bc0c29eb4.png) |
-
-
-
 <br>
 
 ## Repository Directory 
